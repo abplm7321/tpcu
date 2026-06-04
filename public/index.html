@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>教科書線上書櫃中心</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; background-color: #f8f9fa; color: #333; }
+        .container { background: white; padding: 20px; border-radius: 8px; max-width: 900px; margin: auto; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        h1 { text-align: center; color: #007bff; margin-bottom: 30px; }
+        
+        /* 書櫃清單的排版樣式 */
+        .cabinet-section { margin-top: 20px; }
+        .cabinet-card { background: #fff; border: 1px solid #e0e0e0; border-radius: 6px; margin-bottom: 15px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+        .cabinet-header { background: #6c757d; color: white; padding: 10px 15px; font-weight: bold; font-size: 16px; }
+        /* 有書的櫃子用不同顏色明顯標示 */
+        .cabinet-card.has-books .cabinet-header { background: #007bff; }
+        .cabinet-body { padding: 12px 15px; }
+        
+        /* 書籍項目樣式 */
+        .book-item { padding: 8px 0; border-bottom: 1px dashed #eee; }
+        .book-item:last-child { border-bottom: none; }
+        .book-title { font-size: 16px; color: #212529; }
+        .book-author { color: #6c757d; font-size: 14px; margin-left: 15px; }
+        .empty-text { color: #b3b3b3; font-style: italic; font-size: 14px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>📚 教科書線上書櫃中心</h1>
+    <p style="text-align: center; color: #666;">歡迎瀏覽目前在架教科書，請依書櫃編號尋找您需要的書籍。</p>
+    
+    <div id="cabinetListContainer" class="cabinet-section">
+        </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        loadUserCabinetBooks();
+    });
+
+    // 取得書櫃與書籍並渲染（無管理功能）
+    function loadUserCabinetBooks() {
+        Promise.all([
+            fetch('/api/cabinets').then(res => res.json()),
+            fetch('/api/books').then(res => res.json())
+        ])
+        .then(([cabinets, books]) => {
+            const container = document.getElementById('cabinetListContainer');
+            container.innerHTML = ''; 
+
+            cabinets.forEach(cabinet => {
+                const currentCabinetBooks = books.filter(b => b.cabinetId === cabinet.id);
+                const hasBooks = currentCabinetBooks.length > 0;
+
+                // 建立櫃子外殼（如果有書就加上 has-books 的 class 變成藍色頂條）
+                let cabinetHtml = `
+                    <div class="cabinet-card ${hasBooks ? 'has-books' : ''}">
+                        <div class="cabinet-header">${cabinet.name}</div>
+                        <div class="cabinet-body">
+                `;
+
+                if (hasBooks) {
+                    const booksHtml = currentCabinetBooks.map(book => `
+                        <div class="book-item">
+                            <span class="book-title">📘 <strong>${book.title}</strong></span>
+                            <span class="book-author">作者：${book.author}</span>
+                        </div>
+                    `).join('');
+                    cabinetHtml += booksHtml;
+                } else {
+                    cabinetHtml += `<span class="empty-text">─ 暫無教科書 ─</span>`;
+                }
+
+                cabinetHtml += `
+                        </div>
+                    </div>
+                `;
+
+                container.innerHTML += cabinetHtml;
+            });
+        });
+    }
+</script>
+</body>
+</html>

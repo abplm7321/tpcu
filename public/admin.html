@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>教科書管理後台</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; background-color: #f4f4f4; color: #333; }
+        .container { background: white; padding: 20px; border-radius: 8px; max-width: 900px; margin: auto; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input, select { width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
+        button { background: #28a745; color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; }
+        button:hover { background: #218838; }
+        fieldset { border: 1px solid #ddd; padding: 20px; border-radius: 6px; margin-bottom: 30px; }
+        
+        /* 書櫃清單的排版樣式 */
+        .cabinet-section { margin-top: 20px; }
+        .cabinet-card { background: #fdfdfd; border: 1px solid #e0e0e0; border-radius: 6px; margin-bottom: 15px; overflow: hidden; }
+        .cabinet-header { background: #007bff; color: white; padding: 10px 15px; font-weight: bold; font-size: 16px; }
+        .cabinet-body { padding: 10px 15px; }
+        
+        /* 書櫃內部的書籍清單 */
+        .book-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px dashed #eee; }
+        .book-item:last-child { border-bottom: none; }
+        .book-info { font-size: 15px; }
+        .book-author { color: #666; font-size: 13px; margin-left: 10px; }
+        .delete-btn { background: #dc3545; padding: 4px 8px; font-size: 12px; border-radius: 3px; }
+        .delete-btn:hover { background: #c82333; }
+        .empty-text { color: #999; font-style: italic; font-size: 14px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>📚 教科書管理後台</h2>
+    
+    <!-- 上架表單 -->
+    <fieldset>
+        <legend>上架新教科書</legend>
+        <form id="bookForm">
+            <div class="form-group">
+                <label>書名</label>
+                <input type="text" id="title">
+            </div>
+            <div class="form-group">
+                <label>作者</label>
+                <input type="text" id="author">
+            </div>
+            <div class="form-group">
+                <label>選擇書櫃 (1 ~ 60 櫃)</label>
+                <select id="cabinetSelect" required>
+                    <!-- 動態載入 1~60 櫃選項 -->
+                </select>
+            </div>
+            <button type="submit">確認上架書籍</button>
+        </form>
+    </fieldset>
+
+    <!-- 按書櫃區分的書籍展示區 -->
+    <h3>📊 各書櫃在架書籍 (1 ~ 60 櫃)</h3>
+    <div id="cabinetListContainer" class="cabinet-section">
+        <!-- 動態透過 JavaScript 渲染 60 個櫃子 -->
+    </div>
+</div>
+
+<script>
+    // 1. 網頁一載入，先檢查有沒有 Token，沒有就踢回登入頁
+const token = localStorage.getItem('adminToken');
+if (!token) {
+    alert('請先登入！');
+    window.location.href = '/login.html';
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+    loadCabinets();
+    loadCabinetBooks();
+});
+
+function loadCabinets() {
+    fetch('/api/cabinets').then(res => res.json()).then(cabinets => {
+        const select = document.getElementById('cabinetSelect');
+        select.innerHTML = cabinets.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+    });
+}
+
+function loadCabinetBooks() {
+    Promise.all([
+        fetch('/api/cabinets').then(res => res.json()),
+        fetch('/api/books').then(res => res.json())
+    ])
+    .then(([cabinets, books]) => {
+        const container = document.getElementById('cabinetListContainer');
+        container.innerHTML = ''; 
+        cabinets.forEach(cabinet => {
+            const currentCabinetBooks = books.filter(b => b.cabinetId === cabinet.id);
+            let cabinetHtml = `<div class="cabinet-card"><div class="cabinet-header">${cabinet.name}</div><div class="cabinet-body">`;
+            if (currentCabinetBooks.length > 0) {
+                cabinetHtml += currentCabinetBooks.map(book => `
+                    <div class="book-item">
+                        <div class="book-info"><strong>${book.title}</strong><span class="book-author">作者：${book.author}</span></div>
+                        <button class="delete-btn" onclick="deleteBook('${book._id}')">下架</button>
+                    </div>
+                `).join('');
+            } else {
+                cabinetHtml += `<span class="empty-text">─ 目前此書櫃空空如也 ─</span>`;
+            }
+            cabinetHtml += `</div></div>`;
+            container.innerHTML += cabinetHtml;
+        });
+    });
+}
+
+// 2. 新增書籍：加上 Headers 攜帶 Token
+document.getElementById('bookForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const title = document.getElementById('title').value;
+    const author = document.getElementById('author').value;
+    const cabinetId = document.getElementById('cabinetSelect').value;
+
+    fetch('/api/admin/books', {
+        method: 'POST',
+        headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}` // 帶上數位通行證
+        },
+        body: JSON.stringify({ title, author, cabinetId })
+    })
+    .then(res => {
+        if(res.status === 401 || res.status === 403) { alert('驗證遭拒，請重新登入'); window.location.href='/login.html'; }
+        return res.json();
+    })
+    .then(data => {
+        alert(data.message);
+        document.getElementById('bookForm').reset();
+        loadCabinetBooks();
+    });
+});
+
+// 3. 下架書籍：加上 Headers 攜帶 Token
+function deleteBook(id) {
+    if(confirm("確定要下架這本書嗎？")) {
+        fetch(`/api/admin/books/${id}`, { 
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` } // 帶上數位通行證
+        })
+        .then(res => {
+            if(res.status === 401 || res.status === 403) { alert('驗證遭拒，請重新登入'); window.location.href='/login.html'; }
+            return res.json();
+        })
+        .then(data => {
+            alert(data.message);
+            loadCabinetBooks();
+        });
+    }
+}
+</script>
+</body>
+</html>
