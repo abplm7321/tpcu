@@ -22,6 +22,12 @@
         .book-title { font-size: 16px; color: #212529; }
         .book-author { color: #6c757d; font-size: 14px; margin-left: 15px; }
         .empty-text { color: #b3b3b3; font-style: italic; font-size: 14px; }
+
+        .search-container {text-align: center;margin: 20px 0 30px 0;}
+
+        #searchInput {width: 80%;max-width: 500px;padding: 12px 20px;font-size: 16px;border: 2px solid #007bff;border-radius: 25px; /* 圓角造型 */outline: none;box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);transition: all 0.3s ease;}
+
+        #searchInput:focus {width: 85%; /* 點擊時微微拉長 */box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);}
     </style>
 </head>
 <body>
@@ -30,6 +36,10 @@
     <h1>📚 教科書線上書櫃中心</h1>
     <p style="text-align: center; color: #666;">歡迎瀏覽目前在架教科書，請依書櫃編號尋找您需要的書籍。</p>
     
+    <div class="search-container">
+        <input type="text" id="searchInput" placeholder="輸入書名關鍵字" oninput="filterCabinets()">
+    </div>
+
     <div id="cabinetListContainer" class="cabinet-section">
         </div>
 </div>
@@ -38,47 +48,79 @@
     document.addEventListener("DOMContentLoaded", () => {
         loadUserCabinetBooks();
     });
+    let allCabinetsData = []; // 用來存儲下載的櫃子和書籍資料，方便隨時篩選
+    let allBooksData = [];
 
-    // 取得書櫃與書籍並渲染（無管理功能）
-    function loadUserCabinetBooks() {
+    // 修改原本的載入功能
+    function loadCabinetBooks() {
         Promise.all([
             fetch('/api/cabinets').then(res => res.json()),
             fetch('/api/books').then(res => res.json())
         ])
         .then(([cabinets, books]) => {
-            const container = document.getElementById('cabinetListContainer');
-            container.innerHTML = ''; 
+            allCabinetsData = cabinets;
+            allBooksData = books;
+            renderCabinets(cabinets, books); // 呼叫獨立的渲染函數
+        });
+    }
 
-            cabinets.forEach(cabinet => {
-                const currentCabinetBooks = books.filter(b => b.cabinetId === cabinet.id);
-                const hasBooks = currentCabinetBooks.length > 0;
+    // 負責把資料畫到網頁上的函數
+    function renderCabinets(cabinets, books) {
+        const container = document.getElementById('cabinetListContainer');
+        container.innerHTML = ''; 
+        
+        cabinets.forEach(cabinet => {
+            const currentCabinetBooks = books.filter(b => b.cabinetId === cabinet.id);
+            
+            // 關鍵：把這個櫃子裡「所有書名和作者」串成一個大字串，存在 data-books 屬性裡，用來做搜尋比對
+            const booksSearchString = currentCabinetBooks.map(b => b.title + b.author).join('||').toLowerCase();
 
-                // 建立櫃子外殼（如果有書就加上 has-books 的 class 變成藍色頂條）
-                let cabinetHtml = `
-                    <div class="cabinet-card ${hasBooks ? 'has-books' : ''}">
-                        <div class="cabinet-header">${cabinet.name}</div>
-                        <div class="cabinet-body">
-                `;
-
-                if (hasBooks) {
-                    const booksHtml = currentCabinetBooks.map(book => `
-                        <div class="book-item">
-                            <span class="book-title">📘 <strong>${book.title}</strong></span>
+            let cabinetHtml = `
+                <div class="cabinet-card" data-books="${booksSearchString}">
+                    <div class="cabinet-header">${cabinet.name}</div>
+                    <div class="cabinet-body">
+            `;
+            
+            if (currentCabinetBooks.length > 0) {
+                cabinetHtml += currentCabinetBooks.map(book => `
+                    <div class="book-item">
+                        <div class="book-info">
+                            <strong>${book.title}</strong> 
                             <span class="book-author">作者：${book.author}</span>
                         </div>
-                    `).join('');
-                    cabinetHtml += booksHtml;
-                } else {
-                    cabinetHtml += `<span class="empty-text">─ 暫無教科書 ─</span>`;
-                }
-
-                cabinetHtml += `
-                        </div>
                     </div>
-                `;
+                `).join('');
+            } else {
+                cabinetHtml += `<span class="empty-text">─ 目前此書櫃空空如也 ─</span>`;
+            }
+            
+            cabinetHtml += `</div></div>`;
+            container.innerHTML += cabinetHtml;
+        });
+    }
 
-                container.innerHTML += cabinetHtml;
-            });
+    // 🔍 核心功能：當輸入關鍵字時觸發的篩選函數
+    function filterCabinets() {
+        // 拿到使用者輸入的字，並轉成小寫（不區分大小寫）
+        const keyword = document.getElementById('searchInput').value.trim().toLowerCase();
+        
+        // 抓到畫面上所有的書櫃卡片
+        const cabinetCards = document.querySelectorAll('.cabinet-card');
+        
+        cabinetCards.forEach(card => {
+            // 拿到這個櫃子裡剛才存的所有書名
+            const booksInCabinet = card.getAttribute('data-books');
+            
+            if (keyword === "") {
+                // 如果搜尋欄是空的，全部書櫃都顯示
+                card.style.display = "block";
+            } else if (booksInCabinet.includes(keyword)) {
+                // 如果這個書櫃包含關鍵字，就顯示
+                card.style.display = "block";
+            } else {
+                // 如果這個書櫃沒有這本書，就隱藏！
+                card.style.display = "none";
+            }
         });
     }
 </script>
