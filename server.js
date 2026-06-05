@@ -53,7 +53,7 @@ async function initCabinets() {
 async function initAdminAccount() {
     if (await Admin.countDocuments() === 0) {
         // 🔑 在這裡把 'admin123' 換成你的新密碼
-        const hashedPassword = await bcrypt.hash('admin111', 10);
+        const hashedPassword = await bcrypt.hash('library-tpcu', 10);
         
         // 👤 在這裡把 'admin' 換成你的新帳號
         await Admin.create({ username: 'library', password: hashedPassword });
