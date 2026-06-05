@@ -6,7 +6,10 @@ const jwt = require('jsonwebtoken'); // 引入 JWT
 const bcrypt = require('bcryptjs'); // 引入加密套件
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3000; 
+    app.listen(PORT, '0.0.0.0', () => {
+        console.log(`伺服器運行中，監聽連接埠：${PORT}`);
+    });
 const JWT_SECRET = 'your_super_secret_key_12345'; // JWT 的加密金鑰（私鑰）
 
 app.use(bodyParser.json());
@@ -49,7 +52,7 @@ async function initCabinets() {
 // 自動建立一個測試用的管理員帳號 (預設帳密：admin / admin123)
 async function initAdminAccount() {
     if (await Admin.countDocuments() === 0) {
-        const hashedPassword = await bcrypt.hash('admin123', 10);
+        const hashedPassword = await bcrypt.hash('admin111', 10);
         await Admin.create({ username: 'admin', password: hashedPassword });
         console.log("預設管理員帳號已建立：admin / admin123");
     }
