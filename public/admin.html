@@ -70,7 +70,7 @@
     const token = localStorage.getItem('adminToken'); 
     
     if (!token) {
-        alert("代號外洩！你沒有管理員權限，請先登入！");
+        alert("你沒有管理員權限，請先登入！");
         window.location.href = "/login.html"; // 強制踢回登入頁面
     }
     });
