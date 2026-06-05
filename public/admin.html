@@ -65,83 +65,69 @@
 
 <script>
     // 1. 網頁一載入，先檢查有沒有 Token，沒有就踢回登入頁
-const token = localStorage.getItem('adminToken');
-if (!token) {
-    alert('請先登入！');
-    window.location.href = '/login.html';
-}
-
-document.addEventListener("DOMContentLoaded", () => {
-    loadCabinets();
-    loadCabinetBooks();
-});
-
-function loadCabinets() {
-    fetch('/api/cabinets').then(res => res.json()).then(cabinets => {
-        const select = document.getElementById('cabinetSelect');
-        select.innerHTML = cabinets.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+    document.addEventListener("DOMContentLoaded", () => {
+    // 檢查瀏覽器有沒有存登入標記 (假設你登入成功時存的名字叫 token)
+    const token = localStorage.getItem('adminToken'); 
+    
+    if (!token) {
+        alert("代號外洩！你沒有管理員權限，請先登入！");
+        window.location.href = "/login.html"; // 強制踢回登入頁面
+    }
     });
-}
 
-function loadCabinetBooks() {
-    Promise.all([
-        fetch('/api/cabinets').then(res => res.json()),
-        fetch('/api/books').then(res => res.json())
-    ])
-    .then(([cabinets, books]) => {
-        const container = document.getElementById('cabinetListContainer');
-        container.innerHTML = ''; 
-        cabinets.forEach(cabinet => {
-            const currentCabinetBooks = books.filter(b => b.cabinetId === cabinet.id);
-            let cabinetHtml = `<div class="cabinet-card"><div class="cabinet-header">${cabinet.name}</div><div class="cabinet-body">`;
-            if (currentCabinetBooks.length > 0) {
-                cabinetHtml += currentCabinetBooks.map(book => `
-                    <div class="book-item">
-                        <div class="book-info"><strong>${book.title}</strong><span class="book-author">作者：${book.author}</span></div>
-                        <button class="delete-btn" onclick="deleteBook('${book._id}')">下架</button>
-                    </div>
-                `).join('');
-            } else {
-                cabinetHtml += `<span class="empty-text">─ 目前此書櫃空空如也 ─</span>`;
-            }
-            cabinetHtml += `</div></div>`;
-            container.innerHTML += cabinetHtml;
-        });
-    });
-}
-
-// 2. 新增書籍：加上 Headers 攜帶 Token
-document.getElementById('bookForm').addEventListener('submit', (e) => {
-    e.preventDefault();
-    const title = document.getElementById('title').value;
-    const author = document.getElementById('author').value;
-    const cabinetId = document.getElementById('cabinetSelect').value;
-
-    fetch('/api/admin/books', {
-        method: 'POST',
-        headers: { 
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}` // 帶上數位通行證
-        },
-        body: JSON.stringify({ title, author, cabinetId })
-    })
-    .then(res => {
-        if(res.status === 401 || res.status === 403) { alert('驗證遭拒，請重新登入'); window.location.href='/login.html'; }
-        return res.json();
-    })
-    .then(data => {
-        alert(data.message);
-        document.getElementById('bookForm').reset();
+    document.addEventListener("DOMContentLoaded", () => {
+        loadCabinets();
         loadCabinetBooks();
     });
-});
 
-// 3. 下架書籍：加上 Headers 攜帶 Token
-function deleteBook(id) {
-    if(confirm("確定要下架這本書嗎？")) {
-        fetch(`/api/admin/books/${id}`, { 
-            method: 'DELETE',
-            headers: { 'Authorization': `Bearer ${token}` } // 帶上數位通行證
+    function loadCabinets() {
+        fetch('/api/cabinets').then(res => res.json()).then(cabinets => {
+            const select = document.getElementById('cabinetSelect');
+            select.innerHTML = cabinets.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+        });
+    }
+
+    function loadCabinetBooks() {
+        Promise.all([
+            fetch('/api/cabinets').then(res => res.json()),
+            fetch('/api/books').then(res => res.json())
+        ])
+        .then(([cabinets, books]) => {
+            const container = document.getElementById('cabinetListContainer');
+            container.innerHTML = ''; 
+            cabinets.forEach(cabinet => {
+                const currentCabinetBooks = books.filter(b => b.cabinetId === cabinet.id);
+                let cabinetHtml = `<div class="cabinet-card"><div class="cabinet-header">${cabinet.name}</div><div class="cabinet-body">`;
+                if (currentCabinetBooks.length > 0) {
+                    cabinetHtml += currentCabinetBooks.map(book => `
+                        <div class="book-item">
+                            <div class="book-info"><strong>${book.title}</strong><span class="book-author">作者：${book.author}</span></div>
+                            <button class="delete-btn" onclick="deleteBook('${book._id}')">下架</button>
+                        </div>
+                    `).join('');
+                } else {
+                    cabinetHtml += `<span class="empty-text">─ 目前此書櫃空空如也 ─</span>`;
+                }
+                cabinetHtml += `</div></div>`;
+                container.innerHTML += cabinetHtml;
+            });
+        });
+    }
+
+    // 2. 新增書籍：加上 Headers 攜帶 Token
+    document.getElementById('bookForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const title = document.getElementById('title').value;
+        const author = document.getElementById('author').value;
+        const cabinetId = document.getElementById('cabinetSelect').value;
+
+        fetch('/api/admin/books', {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}` // 帶上數位通行證
+            },
+            body: JSON.stringify({ title, author, cabinetId })
         })
         .then(res => {
             if(res.status === 401 || res.status === 403) { alert('驗證遭拒，請重新登入'); window.location.href='/login.html'; }
@@ -149,10 +135,28 @@ function deleteBook(id) {
         })
         .then(data => {
             alert(data.message);
+            document.getElementById('bookForm').reset();
             loadCabinetBooks();
         });
+    });
+
+    // 3. 下架書籍：加上 Headers 攜帶 Token
+    function deleteBook(id) {
+        if(confirm("確定要下架這本書嗎？")) {
+            fetch(`/api/admin/books/${id}`, { 
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` } // 帶上數位通行證
+            })
+            .then(res => {
+                if(res.status === 401 || res.status === 403) { alert('驗證遭拒，請重新登入'); window.location.href='/login.html'; }
+                return res.json();
+            })
+            .then(data => {
+                alert(data.message);
+                loadCabinetBooks();
+            });
+        }
     }
-}
 </script>
 </body>
 </html>
