@@ -2,56 +2,54 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>教科書線上書櫃中心</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 40px; background-color: #f8f9fa; color: #333; }
-        .container { background: white; padding: 20px; border-radius: 8px; max-width: 900px; margin: auto; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
-        h1 { text-align: center; color: #007bff; margin-bottom: 30px; }
+        body { font-family: Arial, sans-serif; background: #f4f4f4; margin: 0; padding: 20px; }
+        .container { max-width: 1200px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        h1 { text-align: center; color: #333; }
+        p { text-align: center; color: #666; }
         
-        /* 書櫃清單的排版樣式 */
-        .cabinet-section { margin-top: 20px; }
-        .cabinet-card { background: #fff; border: 1px solid #e0e0e0; border-radius: 6px; margin-bottom: 15px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-        .cabinet-header { background: #6c757d; color: white; padding: 10px 15px; font-weight: bold; font-size: 16px; }
-        /* 有書的櫃子用不同顏色明顯標示 */
-        .cabinet-card.has-books .cabinet-header { background: #007bff; }
-        .cabinet-body { padding: 12px 15px; }
-        
-        /* 書籍項目樣式 */
-        .book-item { padding: 8px 0; border-bottom: 1px dashed #eee; }
-        .book-item:last-child { border-bottom: none; }
-        .book-title { font-size: 16px; color: #212529; }
-        .book-author { color: #6c757d; font-size: 14px; margin-left: 15px; }
-        .empty-text { color: #b3b3b3; font-style: italic; font-size: 14px; }
+        /* 🔍 搜尋欄樣式 */
+        .search-container { text-align: center; margin: 20px 0 30px 0; }
+        #searchInput { width: 80%; max-width: 500px; padding: 12px 20px; font-size: 16px; border: 2px solid #007bff; border-radius: 25px; outline: none; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); transition: all 0.3s ease; }
+        #searchInput:focus { width: 85%; box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3); }
 
-        .search-container {text-align: center;margin: 20px 0 30px 0;}
-
-        #searchInput {width: 80%;max-width: 500px;padding: 12px 20px;font-size: 16px;border: 2px solid #007bff;border-radius: 25px; /* 圓角造型 */outline: none;box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);transition: all 0.3s ease;}
-
-        #searchInput:focus {width: 85%; /* 點擊時微微拉長 */box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);}
+        /* 書櫃排版 */
+        #cabinetListContainer { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; margin-top: 20px; }
+        .cabinet-card { background: #fff; border: 1px solid #ddd; border-radius: 6px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .cabinet-header { background: #6c757d; color: white; padding: 10px; font-weight: bold; text-align: center; }
+        .cabinet-body { padding: 15px; min-height: 80px; }
+        .book-item { background: #f8f9fa; border-left: 4px solid #007bff; padding: 8px; margin-bottom: 8px; border-radius: 4px; }
+        .book-info strong { display: block; color: #333; }
+        .book-author { font-size: 12px; color: #777; }
+        .empty-text { color: #aaa; font-style: italic; display: block; text-align: center; padding: 10px 0; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <h1>📚 教科書線上書櫃中心</h1>
-    <p style="text-align: center; color: #666;">歡迎瀏覽目前在架教科書，請依書櫃編號尋找您需要的書籍。</p>
+    <p>歡迎瀏覽目前在架教科書，請依書櫃編號尋找您需要的書籍。</p>
     
     <div class="search-container">
-        <input type="text" id="searchInput" placeholder="輸入書名關鍵字" oninput="filterCabinets()">
+        <input type="text" id="searchInput" placeholder="輸入書名關鍵字，自動篩選書櫃..." oninput="filterCabinets()">
     </div>
-
-    <div id="cabinetListContainer" class="cabinet-section">
-        </div>
+    
+    <div id="cabinetListContainer"></div>
 </div>
 
 <script>
-    document.addEventListener("DOMContentLoaded", () => {
-        loadUserCabinetBooks();
-    });
-    let allCabinetsData = []; // 用來存儲下載的櫃子和書籍資料，方便隨時篩選
+    // 1. 全域變數
+    let allCabinetsData = []; 
     let allBooksData = [];
 
-    // 修改原本的載入功能
+    // 2. 確保網頁載入完成後，執行「正確」的函數名稱
+    document.addEventListener("DOMContentLoaded", () => {
+        loadCabinetBooks(); 
+    });
+
+    // 3. 從後端抓取資料
     function loadCabinetBooks() {
         Promise.all([
             fetch('/api/cabinets').then(res => res.json()),
@@ -60,19 +58,21 @@
         .then(([cabinets, books]) => {
             allCabinetsData = cabinets;
             allBooksData = books;
-            renderCabinets(cabinets, books); // 呼叫獨立的渲染函數
+            renderCabinets(cabinets, books); 
+        })
+        .catch(err => {
+            console.error("前端抓取資料失敗:", err);
         });
     }
 
-    // 負責把資料畫到網頁上的函數
+    // 4. 渲染書櫃到網頁上
     function renderCabinets(cabinets, books) {
         const container = document.getElementById('cabinetListContainer');
+        if (!container) return;
         container.innerHTML = ''; 
         
         cabinets.forEach(cabinet => {
             const currentCabinetBooks = books.filter(b => b.cabinetId === cabinet.id);
-            
-            // 關鍵：把這個櫃子裡「所有書名和作者」串成一個大字串，存在 data-books 屬性裡，用來做搜尋比對
             const booksSearchString = currentCabinetBooks.map(b => b.title + b.author).join('||').toLowerCase();
 
             let cabinetHtml = `
@@ -99,30 +99,24 @@
         });
     }
 
-    // 🔍 核心功能：當輸入關鍵字時觸發的篩選函數
+    // 5. 搜尋篩選功能
     function filterCabinets() {
-        // 拿到使用者輸入的字，並轉成小寫（不區分大小寫）
         const keyword = document.getElementById('searchInput').value.trim().toLowerCase();
-        
-        // 抓到畫面上所有的書櫃卡片
         const cabinetCards = document.querySelectorAll('.cabinet-card');
         
         cabinetCards.forEach(card => {
-            // 拿到這個櫃子裡剛才存的所有書名
-            const booksInCabinet = card.getAttribute('data-books');
+            const booksInCabinet = card.getAttribute('data-books') || '';
             
             if (keyword === "") {
-                // 如果搜尋欄是空的，全部書櫃都顯示
                 card.style.display = "block";
             } else if (booksInCabinet.includes(keyword)) {
-                // 如果這個書櫃包含關鍵字，就顯示
                 card.style.display = "block";
             } else {
-                // 如果這個書櫃沒有這本書，就隱藏！
                 card.style.display = "none";
             }
         });
     }
 </script>
+
 </body>
 </html>
