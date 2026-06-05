@@ -52,9 +52,13 @@ async function initCabinets() {
 // 自動建立一個測試用的管理員帳號 (預設帳密：admin / admin123)
 async function initAdminAccount() {
     if (await Admin.countDocuments() === 0) {
+        // 🔑 在這裡把 'admin123' 換成你的新密碼
         const hashedPassword = await bcrypt.hash('admin111', 10);
-        await Admin.create({ username: 'admin', password: hashedPassword });
-        console.log("預設管理員帳號已建立：admin / admin123");
+        
+        // 👤 在這裡把 'admin' 換成你的新帳號
+        await Admin.create({ username: 'library', password: hashedPassword });
+        
+        console.log("全新管理員帳號已自動加密並建立！");
     }
 }
 
