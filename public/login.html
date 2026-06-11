@@ -26,21 +26,24 @@
         const username = document.getElementById('username').value;
         const password = document.getElementById('password').value;
 
-        const res = await fetch('/api/auth/login', {
+        fetch('/api/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ username, password })
-        });
-        const data = await res.json();
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.token) { // 或者 data.success 依你的後端回傳格式而定
+                // 💡 關鍵：必須從後端回傳的 data 裡面拿出 token！
+                localStorage.setItem('token', data.token); 
 
-        if (res.ok) {
-            // 關鍵：將 Token 存在瀏覽器中
-            localStorage.setItem('adminToken', data.token);
-            alert('登入成功！導向管理後台...');
-            window.location.href = '/admin.html';
-        } else {
-            alert(data.message);
-        }
+                alert('登入成功！');
+                window.location.href = '/admin.html';
+            } else {
+                alert(data.message || '帳號或密碼錯誤');
+            }
+        })
+        .catch(err => console.error('登入發生錯誤:', err));
     });
 </script>
 </body>

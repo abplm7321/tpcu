@@ -66,7 +66,7 @@
 <script>
     // 1. 網頁一載入，先檢查有沒有 Token，沒有就踢回登入頁
     document.addEventListener("DOMContentLoaded", () => {
-    // 檢查瀏覽器有沒有存登入標記 (假設你登入成功時存的名字叫 token)
+    // 檢查瀏覽器有沒有存登入標記
     const token = localStorage.getItem('adminToken'); 
     
     if (!token) {
