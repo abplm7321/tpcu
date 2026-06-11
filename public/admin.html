@@ -2,161 +2,211 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>教科書管理後台</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 40px; background-color: #f4f4f4; color: #333; }
-        .container { background: white; padding: 20px; border-radius: 8px; max-width: 900px; margin: auto; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        body { font-family: Arial, sans-serif; background: #f4f4f4; margin: 0; padding: 20px; }
+        .container { max-width: 1000px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        h1 { color: #333; display: flex; justify-content: space-between; align-items: center; }
+        .btn-logout { background: #6c757d; font-size: 14px; padding: 5px 15px; }
+        .btn-logout:hover { background: #5a6268; }
         .form-group { margin-bottom: 15px; }
-        label { display: block; margin-bottom: 5px; font-weight: bold; }
-        input, select { width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
-        button { background: #28a745; color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: bold; }
+        .form-group input, .form-group select { width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ddd; border-radius: 4px; }
+        button { background: #28a745; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-size: 16px; }
         button:hover { background: #218838; }
-        fieldset { border: 1px solid #ddd; padding: 20px; border-radius: 6px; margin-bottom: 30px; }
-        
-        /* 書櫃清單的排版樣式 */
-        .cabinet-section { margin-top: 20px; }
-        .cabinet-card { background: #fdfdfd; border: 1px solid #e0e0e0; border-radius: 6px; margin-bottom: 15px; overflow: hidden; }
-        .cabinet-header { background: #007bff; color: white; padding: 10px 15px; font-weight: bold; font-size: 16px; }
-        .cabinet-body { padding: 10px 15px; }
-        
-        /* 書櫃內部的書籍清單 */
-        .book-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px dashed #eee; }
-        .book-item:last-child { border-bottom: none; }
-        .book-info { font-size: 15px; }
-        .book-author { color: #666; font-size: 13px; margin-left: 10px; }
-        .delete-btn { background: #dc3545; padding: 4px 8px; font-size: 12px; border-radius: 3px; }
-        .delete-btn:hover { background: #c82333; }
-        .empty-text { color: #999; font-style: italic; font-size: 14px; }
+        .cabinet-section { margin-top: 30px; }
+        .cabinet-box { border: 1px solid #ddd; margin-bottom: 15px; border-radius: 4px; overflow: hidden; }
+        .cabinet-title { background: #007bff; color: white; padding: 10px; font-weight: bold; }
+        .cabinet-body { padding: 15px; background: #fff; }
+        .book-row { display: flex; justify-content: space-between; align-items: center; padding: 8px; background: #f8f9fa; border-bottom: 1px solid #eee; margin-bottom: 5px; border-radius: 4px; }
+        .btn-delete { background: #dc3545; padding: 5px 10px; font-size: 14px; }
+        .btn-delete:hover { background: #c82333; }
+        .empty-text { color: #aaa; font-style: italic; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>📚 教科書管理後台</h2>
+    <h1>
+        <span>📚 教科書管理後台</span>
+        <button class="btn-logout" onclick="handleLogout()">登出系統</button>
+    </h1>
     
-    <!-- 上架表單 -->
-    <fieldset>
-        <legend>上架新教科書</legend>
-        <form id="bookForm">
-            <div class="form-group">
-                <label>書名</label>
-                <input type="text" id="title">
-            </div>
-            <div class="form-group">
-                <label>作者</label>
-                <input type="text" id="author">
-            </div>
-            <div class="form-group">
-                <label>選擇書櫃 (1 ~ 60 櫃)</label>
-                <select id="cabinetSelect" required>
-                    <!-- 動態載入 1~60 櫃選項 -->
-                </select>
-            </div>
-            <button type="submit">確認上架書籍</button>
-        </form>
-    </fieldset>
-
-    <!-- 按書櫃區分的書籍展示區 -->
-    <h3>📊 各書櫃在架書籍 (1 ~ 60 櫃)</h3>
-    <div id="cabinetListContainer" class="cabinet-section">
-        <!-- 動態透過 JavaScript 渲染 60 個櫃子 -->
+    <div style="background: #fafafa; padding: 20px; border: 1px solid #eee; border-radius: 6px;">
+        <h3>➕ 上架新教科書</h3>
+        <div class="form-group">
+            <label>書名</label>
+            <input type="text" id="bookTitle" placeholder="請輸入書名">
+        </div>
+        <div class="form-group">
+            <label>作者</label>
+            <input type="text" id="bookAuthor" placeholder="請輸入作者">
+        </div>
+        <div class="form-group">
+            <label>選擇書櫃 (1 ~ 60 櫃)</label>
+            <select id="cabinetSelect"></select>
+        </div>
+        <button onclick="handleUploadBook()">確認上架書籍</button>
     </div>
+
+    <div class="cabinet-section" id="adminCabinetContainer"></div>
 </div>
 
 <script>
-    // 1. 網頁一載入，先檢查有沒有 Token，沒有就踢回登入頁
+    // 網頁載入完成後初始化
     document.addEventListener("DOMContentLoaded", () => {
-    // 檢查瀏覽器有沒有存登入標記
-    const token = localStorage.getItem('adminToken'); 
-    
-    if (!token) {
-        alert("你沒有管理員權限，請先登入！");
-        window.location.href = "/login.html"; // 強制踢回登入頁面
-    }
+        // 安全機制：進來後台前，先檢查有沒有 Token，沒有就踢回登入頁
+        const token = localStorage.getItem('token');
+        if (!token) {
+            alert('請先登入系統！');
+            window.location.href = '/login.html';
+            return;
+        }
+
+        generateCabinetOptions();
+        loadAdminData();
     });
 
-    document.addEventListener("DOMContentLoaded", () => {
-        loadCabinets();
-        loadCabinetBooks();
-    });
-
-    function loadCabinets() {
-        fetch('/api/cabinets').then(res => res.json()).then(cabinets => {
-            const select = document.getElementById('cabinetSelect');
-            select.innerHTML = cabinets.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
-        });
+    // 自動生成 1~60 櫃的下拉選單
+    function generateCabinetOptions() {
+        const select = document.getElementById('cabinetSelect');
+        for (let i = 1; i <= 60; i++) {
+            const opt = document.createElement('option');
+            opt.value = i;
+            opt.textContent = `第 ${i} 櫃`;
+            select.appendChild(opt);
+        }
     }
 
-    function loadCabinetBooks() {
+    // 抓取並渲染後台資料
+    function loadAdminData() {
         Promise.all([
             fetch('/api/cabinets').then(res => res.json()),
             fetch('/api/books').then(res => res.json())
         ])
         .then(([cabinets, books]) => {
-            const container = document.getElementById('cabinetListContainer');
-            container.innerHTML = ''; 
-            cabinets.forEach(cabinet => {
-                const currentCabinetBooks = books.filter(b => b.cabinetId === cabinet.id);
-                let cabinetHtml = `<div class="cabinet-card"><div class="cabinet-header">${cabinet.name}</div><div class="cabinet-body">`;
-                if (currentCabinetBooks.length > 0) {
-                    cabinetHtml += currentCabinetBooks.map(book => `
-                        <div class="book-item">
-                            <div class="book-info"><strong>${book.title}</strong><span class="book-author">作者：${book.author}</span></div>
-                            <button class="delete-btn" onclick="deleteBook('${book._id}')">下架</button>
+            renderAdminCabinets(cabinets, books);
+        })
+        .catch(err => console.error("後台抓取資料失敗:", err));
+    }
+
+    // 渲染後台櫃子與書籍列表
+    function renderAdminCabinets(cabinets, books) {
+        const container = document.getElementById('adminCabinetContainer');
+        container.innerHTML = '';
+
+        cabinets.forEach(cabinet => {
+            const currentCabinetBooks = books.filter(b => b.cabinetId === cabinet.id);
+
+            let html = `
+                <div class="cabinet-box">
+                    <div class="cabinet-title">${cabinet.name}</div>
+                    <div class="cabinet-body">
+            `;
+
+            if (currentCabinetBooks.length > 0) {
+                currentCabinetBooks.forEach(book => {
+                    html += `
+                        <div class="book-row">
+                            <div><strong>${book.title}</strong> <span style="color:#666; font-size:14px;">作者：${book.author}</span></div>
+                            <button class="btn-delete" onclick="handleDeleteBook('${book._id}')">下架</button>
                         </div>
-                    `).join('');
-                } else {
-                    cabinetHtml += `<span class="empty-text">─ 目前此書櫃空空如也 ─</span>`;
-                }
-                cabinetHtml += `</div></div>`;
-                container.innerHTML += cabinetHtml;
-            });
+                    `;
+                });
+            } else {
+                html += `<span class="empty-text">─ 目前此書櫃空空如也 ─</span>`;
+            }
+
+            html += `</div></div>`;
+            container.innerHTML += html;
         });
     }
 
-    // 2. 新增書籍：加上 Headers 攜帶 Token
-    document.getElementById('bookForm').addEventListener('submit', (e) => {
-        e.preventDefault();
-        const title = document.getElementById('title').value;
-        const author = document.getElementById('author').value;
-        const cabinetId = document.getElementById('cabinetSelect').value;
+    // 處理上架動作
+    function handleUploadBook() {
+        const title = document.getElementById('bookTitle').value.trim();
+        const author = document.getElementById('bookAuthor').value.trim();
+        const cabinetId = parseInt(document.getElementById('cabinetSelect').value);
+        
+        // ⭕ 完美修復：正式宣告並撈出 token 變數
+        const token = localStorage.getItem('token'); 
 
-        fetch('/api/admin/books', {
+        if (!title || !author) {
+            alert('請填寫完整書名與作者！');
+            return;
+        }
+
+        fetch('/api/books', {
             method: 'POST',
             headers: { 
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}` // 帶上數位通行證
+                'Authorization': token  // 👈 將 Token 成功塞入 Headers
             },
             body: JSON.stringify({ title, author, cabinetId })
         })
         .then(res => {
-            if(res.status === 401 || res.status === 403) { alert('驗證遭拒，請重新登入'); window.location.href='/login.html'; }
+            if (res.status === 401 || res.status === 403) {
+                alert('驗證過期或權限不足，請重新登入！');
+                window.location.href = '/login.html';
+                return;
+            }
+            if (!res.ok) throw new Error('上架失敗');
             return res.json();
         })
         .then(data => {
-            alert(data.message);
-            document.getElementById('bookForm').reset();
-            loadCabinetBooks();
+            alert(`🎉 《${title}》上架成功！`);
+            document.getElementById('bookTitle').value = '';
+            document.getElementById('bookAuthor').value = '';
+            loadAdminData(); // 重新整理列表
+        })
+        .catch(err => {
+            alert('上架發生錯誤，請開啟 F12 查看主控台');
+            console.error(err);
         });
-    });
+    }
 
-    // 3. 下架書籍：加上 Headers 攜帶 Token
-    function deleteBook(id) {
-        if(confirm("確定要下架這本書嗎？")) {
-            fetch(`/api/admin/books/${id}`, { 
-                method: 'DELETE',
-                headers: { 'Authorization': `Bearer ${token}` } // 帶上數位通行證
-            })
-            .then(res => {
-                if(res.status === 401 || res.status === 403) { alert('驗證遭拒，請重新登入'); window.location.href='/login.html'; }
-                return res.json();
-            })
-            .then(data => {
-                alert(data.message);
-                loadCabinetBooks();
-            });
+    // 處理下架動作
+    function handleDeleteBook(bookId) {
+        if (!confirm('確定要下架這本書籍嗎？')) return;
+        
+        // ⭕ 完美修復：正式宣告並撈出 token 變數
+        const token = localStorage.getItem('token'); 
+
+        fetch(`/api/books/${bookId}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': token  // 👈 將 Token 成功塞入 Headers
+            }
+        })
+        .then(res => {
+            if (res.status === 401 || res.status === 403) {
+                alert('驗證過期或權限不足，請重新登入！');
+                window.location.href = '/login.html';
+                return;
+            }
+            if (!res.ok) throw new Error('下架失敗');
+            return res.json();
+        })
+        .then(data => {
+            alert('👋 書籍已成功下架！');
+            loadAdminData(); // 重新整理列表
+        })
+        .catch(err => {
+            alert('下架發生錯誤，請開啟 F12 查看主控台');
+            console.error(err);
+        });
+    }
+
+    // 處理登出
+    function handleLogout() {
+        if (confirm('確定要登出系統嗎？')) {
+            localStorage.removeItem('token'); // 清除 Token
+            alert('已成功登出！');
+            window.location.href = '/login.html';
         }
     }
 </script>
+
 </body>
 </html>
